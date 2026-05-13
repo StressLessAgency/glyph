@@ -149,9 +149,24 @@ function shardKeyframes(s: Shard) {
 }
 
 interface Props {
+  /** Base image name (without extension). Loader picks AVIF > WebP > JPG. */
   src?: string;
   holdMs?: number;
   onShattered?: () => void;
+}
+
+/**
+ * CSS `image-set()` lets the browser pick the smallest format it supports.
+ * AVIF ~168KB, WebP ~214KB, JPG ~261KB fallback.
+ */
+function backgroundImageSet(base: string): string {
+  return [
+    `url("${base}.avif") type("image/avif")`,
+    `url("${base}.webp") type("image/webp")`,
+    `url("${base}.opt.jpg") type("image/jpeg")`,
+  ]
+    .map((s) => s)
+    .join(", ");
 }
 
 const FADE_IN_MS = 450;
@@ -163,7 +178,7 @@ const SHATTER_DURATION_MS = SHATTER_DURATION_S * 1000;
  * the site behind.
  */
 export function StainedGlassHero({
-  src = "/hero-stained.jpg",
+  src = "/hero-stained",
   holdMs = 1600,
   onShattered,
 }: Props) {
@@ -203,8 +218,14 @@ export function StainedGlassHero({
       aria-hidden
       className="fixed inset-0 z-[200] overflow-hidden pointer-events-none"
     >
-      {/* Hidden image keeps the asset hot in the browser cache. */}
-      <link rel="preload" as="image" href={src} />
+      {/* Preload modern format with type hint so browser picks AVIF if supported. */}
+      <link
+        rel="preload"
+        as="image"
+        href={`${src}.avif`}
+        type="image/avif"
+        imageSrcSet={`${src}.avif`}
+      />
       {shards.map((s, i) => {
         const kf = shardKeyframes(s);
         return (
@@ -212,7 +233,7 @@ export function StainedGlassHero({
             key={i}
             className="absolute inset-0"
             style={{
-              backgroundImage: `url(${src})`,
+              backgroundImage: `image-set(${backgroundImageSet(src)})`,
               backgroundSize: "cover",
               backgroundPosition: "center center",
               clipPath: s.clip,

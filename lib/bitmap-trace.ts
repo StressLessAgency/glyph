@@ -24,10 +24,9 @@ export async function bitmapToCommands(
   const tolerance = opts.simplifyTolerance ?? 1.4;
   const maxLong = opts.maxLongEdge ?? 600;
 
-  const img = await loadImage(file);
-  const scale = Math.min(1, maxLong / Math.max(img.width, img.height));
-  const w = Math.max(1, Math.round(img.width * scale));
-  const h = Math.max(1, Math.round(img.height * scale));
+  const bitmap = await decodeBitmap(file, maxLong);
+  const w = bitmap.width;
+  const h = bitmap.height;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
@@ -36,7 +35,9 @@ export async function bitmapToCommands(
   if (!ctx) throw new Error("Canvas 2D unavailable");
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(img, 0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  // Free GPU resources held by ImageBitmap when possible.
+  if ("close" in bitmap && typeof bitmap.close === "function") bitmap.close();
 
   const id = ctx.getImageData(0, 0, w, h);
   const lum = toLuminance(id.data, w, h);
@@ -71,12 +72,37 @@ export async function bitmapToCommands(
   return { cmds, width: w, height: h };
 }
 
-function loadImage(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
+async function decodeBitmap(
+  file: File,
+  maxLong: number
+): Promise<ImageBitmap | HTMLImageElement> {
+  // createImageBitmap can decode on a worker thread + scale during decode.
+  if (typeof createImageBitmap === "function") {
+    try {
+      // First pass to learn intrinsic size, then scale during second decode.
+      const probe = await createImageBitmap(file);
+      const scale = Math.min(1, maxLong / Math.max(probe.width, probe.height));
+      const w = Math.max(1, Math.round(probe.width * scale));
+      const h = Math.max(1, Math.round(probe.height * scale));
+      probe.close?.();
+      return await createImageBitmap(file, {
+        resizeWidth: w,
+        resizeHeight: h,
+        resizeQuality: "high",
+      });
+    } catch {
+      // Fall through to HTMLImageElement.
+    }
+  }
+  return new Promise<HTMLImageElement>((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
+      // Best-effort downscale via canvas later; size comes from natural*.
+      const scale = Math.min(1, maxLong / Math.max(img.width, img.height));
+      Object.defineProperty(img, "width", { value: Math.round(img.width * scale) });
+      Object.defineProperty(img, "height", { value: Math.round(img.height * scale) });
       resolve(img);
     };
     img.onerror = () => {
