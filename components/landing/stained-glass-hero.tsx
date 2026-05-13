@@ -152,6 +152,9 @@ interface Props {
   /** Base image name (without extension). Loader picks AVIF > WebP > JPG. */
   src?: string;
   holdMs?: number;
+  /** Fires when shatter phase begins (good for crossfading to a follow-up bg). */
+  onShatterStart?: () => void;
+  /** Fires when all shards have flown off-screen. */
   onShattered?: () => void;
 }
 
@@ -180,6 +183,7 @@ const SHATTER_DURATION_MS = SHATTER_DURATION_S * 1000;
 export function StainedGlassHero({
   src = "/hero-stained",
   holdMs = 1600,
+  onShatterStart,
   onShattered,
 }: Props) {
   const [mounted, setMounted] = useState(false);
@@ -196,7 +200,10 @@ export function StainedGlassHero({
     if (ran.current) return;
     ran.current = true;
     const t1 = window.setTimeout(() => setPhase("hold"), FADE_IN_MS);
-    const t2 = window.setTimeout(() => setPhase("shatter"), FADE_IN_MS + holdMs);
+    const t2 = window.setTimeout(() => {
+      setPhase("shatter");
+      onShatterStart?.();
+    }, FADE_IN_MS + holdMs);
     const t3 = window.setTimeout(() => {
       setPhase("gone");
       onShattered?.();
@@ -206,7 +213,7 @@ export function StainedGlassHero({
       window.clearTimeout(t2);
       window.clearTimeout(t3);
     };
-  }, [mounted, holdMs, onShattered]);
+  }, [mounted, holdMs, onShatterStart, onShattered]);
 
   if (!mounted) return null;
   if (phase === "gone") return null;

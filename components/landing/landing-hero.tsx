@@ -23,6 +23,7 @@ import type { FontProject } from "@/lib/font-types";
 import { InkScribble } from "./ink-scribble";
 import { ProcessReel } from "./process-reel";
 import { PebbleFall } from "./pebble-fall";
+import { StainedGlassHero } from "./stained-glass-hero";
 import { fireRouteWipe } from "@/components/ui/route-wipe";
 
 export function LandingHero() {
@@ -30,6 +31,7 @@ export function LandingHero() {
   const [fonts, setFonts] = useState<FontProject[]>([]);
   const [creating, setCreating] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [pebbles, setPebbles] = useState(false);
 
   useEffect(() => {
     listFonts().then((fs) =>
@@ -55,7 +57,8 @@ export function LandingHero() {
   return (
     <div className="relative w-full overflow-x-hidden bg-bg noise">
       <div aria-hidden className="pointer-events-none fixed inset-0 sunset opacity-90" />
-      <PebbleFall />
+      {pebbles && <PebbleFall />}
+      <StainedGlassHero onShatterStart={() => setPebbles(true)} />
 
       <header
         className={`sticky top-0 z-30 flex h-16 items-center justify-between px-6 sm:px-8 transition-all duration-300 ${
