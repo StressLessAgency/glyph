@@ -72,12 +72,12 @@ export function PebbleFall({ count = 220, src = "/hero-stained" }: Props) {
       const depthFactor = (z + 320) / 560; // 0..1
       const size = rand(8, 28) + depthFactor * 22;
       const scale = 0.55 + depthFactor * 0.85;
-      // Near pebbles fall faster (parallax).
-      const vy = 6 + depthFactor * 22 + rand(-2, 4);
-      const vx = rand(-3, 3) + depthFactor * rand(-2, 2);
-      const wx = rand(-30, 30);
-      const wy = rand(-30, 30);
-      const wz = rand(-90, 90);
+      // Slow gentle drift. Parallax via depth: near pebbles slightly faster.
+      const vy = 1.2 + depthFactor * 4.5 + rand(-0.4, 0.8);
+      const vx = rand(-0.7, 0.7) + depthFactor * rand(-0.5, 0.5);
+      const wx = rand(-8, 8);
+      const wy = rand(-8, 8);
+      const wz = rand(-22, 22);
       const shape = (Math.random() * SHAPES.length) | 0;
 
       // Random initial position scattered across viewport so the fall reads
