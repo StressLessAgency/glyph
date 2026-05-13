@@ -22,7 +22,7 @@ import { listFonts, saveFont } from "@/lib/db";
 import type { FontProject } from "@/lib/font-types";
 import { InkScribble } from "./ink-scribble";
 import { ProcessReel } from "./process-reel";
-import { StainedGlassHero } from "./stained-glass-hero";
+import { PebbleFall } from "./pebble-fall";
 import { fireRouteWipe } from "@/components/ui/route-wipe";
 
 export function LandingHero() {
@@ -55,7 +55,7 @@ export function LandingHero() {
   return (
     <div className="relative w-full overflow-x-hidden bg-bg noise">
       <div aria-hidden className="pointer-events-none fixed inset-0 sunset opacity-90" />
-      <StainedGlassHero />
+      <PebbleFall />
 
       <header
         className={`sticky top-0 z-30 flex h-16 items-center justify-between px-6 sm:px-8 transition-all duration-300 ${
