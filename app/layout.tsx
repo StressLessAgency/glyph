@@ -30,6 +30,15 @@ export const metadata: Metadata = {
     "Designer-first font studio. Draw, photograph, or upload glyphs. Export OTF, TTF, WOFF in one click.",
 };
 
+// Inline script that runs before paint to apply persisted theme.
+// Avoids flash-of-wrong-theme on first load.
+const THEME_INIT = `
+(function(){try{
+  var t = localStorage.getItem('glyph-theme');
+  if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+}catch(e){}})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -38,6 +47,23 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${serif.variable} ${mono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Preload the stained-glass hero asset — first paint depends on it. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/hero-stained.avif"
+          type="image/avif"
+          fetchPriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/hero-stained.webp"
+          type="image/webp"
+        />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body className="min-h-full bg-bg text-fg flex flex-col">
         <RouteWipe>{children}</RouteWipe>
         <Toaster

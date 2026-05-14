@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, ArrowLeft, Loader2 } from "lucide-react";
 import { useFontStore } from "@/stores/font-store";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { fireRouteWipe } from "@/components/ui/route-wipe";
 
 export function Topbar() {
@@ -74,6 +75,7 @@ export function Topbar() {
             <span className="opacity-0">·</span>
           )}
         </div>
+        <ThemeToggle />
       </div>
     </header>
   );

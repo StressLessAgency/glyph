@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/ui/magnetic";
 import { Reveal } from "@/components/ui/reveal";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { createFontProject } from "@/stores/font-store";
 import { listFonts, saveFont } from "@/lib/db";
 import type { FontProject } from "@/lib/font-types";
@@ -85,6 +86,7 @@ export function LandingHero() {
           <Button variant="ghost" size="sm" asChild>
             <a href="#stack">Stack</a>
           </Button>
+          <ThemeToggle />
           <Magnetic strength={0.3}>
             <Button variant="accent" size="sm" onClick={startNew} disabled={creating}>
               Start a font
