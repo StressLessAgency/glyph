@@ -217,7 +217,7 @@ export function LandingHero() {
                     e.preventDefault();
                     fireRouteWipe(() => router.push(`/editor/${f.id}`));
                   }}
-                  className="group flex items-center justify-between rounded-xl border border-border bg-bg p-4 transition hover:border-ink/40 hover:shadow-lift"
+                  className="card-light group flex items-center justify-between rounded-xl border border-border p-4 transition hover:border-ink/40 hover:shadow-lift"
                 >
                   <div className="flex flex-col">
                     <span className="text-[15px] font-medium text-fg">
@@ -448,7 +448,7 @@ function FeatureCard({
 }) {
   return (
     <div
-      className="group relative flex flex-col gap-5 overflow-hidden bg-bg p-7 transition hover:bg-surface/30"
+      className="card-light group relative flex flex-col gap-5 overflow-hidden p-7 transition hover:bg-surface/30"
       style={{ ["--card-accent" as string]: accent }}
     >
       <div
@@ -499,7 +499,7 @@ function Stat({
   color?: string;
 }) {
   return (
-    <div className="group relative flex flex-col items-center gap-1 bg-bg px-4 py-9 transition-colors hover:bg-surface/40">
+    <div className="card-light group relative flex flex-col items-center gap-1 px-4 py-9 transition-colors hover:bg-surface/40">
       <span
         className="font-serif italic text-4xl leading-none transition-colors duration-300"
         style={{ color }}
@@ -531,7 +531,7 @@ function StackRow({
   body: string;
 }) {
   return (
-    <div className="flex items-start gap-4 rounded-xl border border-border bg-bg p-5">
+    <div className="card-light flex items-start gap-4 rounded-xl border border-border p-5">
       <div className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-fg">
         {icon}
       </div>

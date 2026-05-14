@@ -40,7 +40,7 @@ export function ProcessReel() {
       {STEPS.map((s, i) => (
         <div
           key={s.n}
-          className="group flex flex-col gap-6 bg-bg p-6 transition hover:bg-surface/40"
+          className="card-light group flex flex-col gap-6 p-6 transition hover:bg-surface/40"
         >
           <div className="flex items-center justify-between">
             <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-fg transition group-hover:bg-ink group-hover:text-bg">

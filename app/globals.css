@@ -128,6 +128,24 @@
 }
 
 @layer utilities {
+  /* Force a light-themed card surface regardless of ambient theme. */
+  .card-light {
+    --color-bg: #faf6ec;
+    --color-surface: #f3ecd9;
+    --color-surface-2: #ece2c4;
+    --color-fg: #001219;
+    --color-fg-muted: #2f4750;
+    --color-fg-subtle: #566669;
+    --color-border: #e6dcc1;
+    --color-border-strong: #c9bb96;
+    --color-ink: #001219;
+    --color-accent-soft: #fff3da;
+    --color-info-soft: #d9eef1;
+    color-scheme: light;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
   .text-balance {
     text-wrap: balance;
   }
