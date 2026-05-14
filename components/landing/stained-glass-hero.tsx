@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Delaunay } from "d3-delaunay";
 
-const NUM_SHARDS = 240;
+const NUM_SHARDS = 70;
 const SEED = 8821;
 // Generation viewport in normalized units (0–1000 x, 0–700 y).
 const W = 1000;
@@ -42,8 +42,8 @@ function mulberry32(seed: number) {
 function buildShards(): Shard[] {
   const rand = mulberry32(SEED);
   // Jittered grid seed points produce more even-sized shards than pure random.
-  const cols = 20;
-  const rows = 14;
+  const cols = 11;
+  const rows = 8;
   const pts: [number, number][] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -242,7 +242,6 @@ export function StainedGlassHero({
               WebkitClipPath: s.clip,
               transformOrigin: `${s.cx}% ${s.cy}%`,
               willChange: "transform, opacity",
-              boxShadow: "inset 0 0 0 0.5px rgba(0,18,25,0.3)",
             }}
             initial={{ opacity: 0, scale: 1.005, x: 0, y: 0, rotate: 0 }}
             animate={
@@ -267,17 +266,6 @@ export function StainedGlassHero({
         );
       })}
 
-      {/* Outer leading — animated SVG lines that trace shard edges, fade on shatter */}
-      <motion.div
-        className="absolute inset-0 mix-blend-overlay"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: shattering ? 0 : 0.06 }}
-        transition={{ duration: 0.5 }}
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
     </div>
   );
 }

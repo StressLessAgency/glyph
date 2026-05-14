@@ -2,196 +2,311 @@
 
 import { useEffect, useRef } from "react";
 
-interface Pebble {
-  el: HTMLDivElement;
-  x: number;
-  y: number;
-  z: number;
-  vy: number;
-  vx: number;
-  rx: number;
-  ry: number;
-  rz: number;
-  wx: number;
-  wy: number;
-  wz: number;
-  scale: number;
-  size: number;
-  bgX: number;
-  bgY: number;
-  shape: number;
-}
+/**
+ * Single-canvas pebble fall. All pebbles drawn in one paint per frame.
+ *
+ * Per pebble we pre-bake a tiny offscreen canvas (the stained-glass image
+ * clipped to the pebble's polygon shape, sampled at the pebble's random color
+ * region). Per frame the main canvas blits the sprite with rotation +
+ * translation. No layout, no per-pebble paint — only composite.
+ */
 
-const SHAPES = [
-  "polygon(50% 0%, 100% 100%, 0% 100%)",
-  "polygon(0% 0%, 100% 25%, 80% 100%, 10% 90%)",
-  "polygon(20% 0%, 100% 0%, 100% 80%, 30% 100%, 0% 60%)",
-  "polygon(10% 10%, 90% 0%, 100% 70%, 60% 100%, 0% 80%)",
-  "polygon(0% 30%, 50% 0%, 100% 40%, 80% 100%, 20% 100%)",
-  "polygon(30% 0%, 100% 30%, 70% 100%, 0% 70%)",
-  "polygon(0% 0%, 80% 10%, 100% 80%, 50% 100%, 0% 60%)",
-  "polygon(10% 0%, 100% 20%, 90% 90%, 0% 80%)",
-  "polygon(40% 0%, 100% 50%, 60% 100%, 0% 50%)",
-  "polygon(0% 20%, 60% 0%, 100% 30%, 90% 100%, 20% 90%)",
-  "polygon(30% 10%, 100% 0%, 100% 90%, 0% 100%)",
-  "polygon(0% 0%, 100% 40%, 70% 100%, 0% 70%)",
+type Pt = readonly [number, number];
+
+/** Hand-tuned irregular shard polygons (12 variants) in 0..1 unit space. */
+const SHAPES: Pt[][] = [
+  [
+    [0.5, 0],
+    [1, 1],
+    [0, 1],
+  ],
+  [
+    [0, 0],
+    [1, 0.25],
+    [0.8, 1],
+    [0.1, 0.9],
+  ],
+  [
+    [0.2, 0],
+    [1, 0],
+    [1, 0.8],
+    [0.3, 1],
+    [0, 0.6],
+  ],
+  [
+    [0.1, 0.1],
+    [0.9, 0],
+    [1, 0.7],
+    [0.6, 1],
+    [0, 0.8],
+  ],
+  [
+    [0, 0.3],
+    [0.5, 0],
+    [1, 0.4],
+    [0.8, 1],
+    [0.2, 1],
+  ],
+  [
+    [0.3, 0],
+    [1, 0.3],
+    [0.7, 1],
+    [0, 0.7],
+  ],
+  [
+    [0, 0],
+    [0.8, 0.1],
+    [1, 0.8],
+    [0.5, 1],
+    [0, 0.6],
+  ],
+  [
+    [0.1, 0],
+    [1, 0.2],
+    [0.9, 0.9],
+    [0, 0.8],
+  ],
+  [
+    [0.4, 0],
+    [1, 0.5],
+    [0.6, 1],
+    [0, 0.5],
+  ],
+  [
+    [0, 0.2],
+    [0.6, 0],
+    [1, 0.3],
+    [0.9, 1],
+    [0.2, 0.9],
+  ],
+  [
+    [0.3, 0.1],
+    [1, 0],
+    [1, 0.9],
+    [0, 1],
+  ],
+  [
+    [0, 0],
+    [1, 0.4],
+    [0.7, 1],
+    [0, 0.7],
+  ],
 ];
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
+interface Pebble {
+  sprite: HTMLCanvasElement;
+  size: number;
+  x: number;
+  y: number;
+  z: number;
+  vy: number;
+  vx: number;
+  rot: number;
+  omega: number;
+  scale: number;
+  opacity: number;
+}
+
 interface Props {
   count?: number;
-  /** Base image path (without extension); loader picks AVIF > WebP > JPG. */
   src?: string;
 }
 
-export function PebbleFall({ count = 220, src = "/hero-stained" }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const pebblesRef = useRef<Pebble[]>([]);
+async function loadImage(src: string): Promise<ImageBitmap | HTMLImageElement> {
+  const res = await fetch(src);
+  const blob = await res.blob();
+  if (typeof createImageBitmap === "function") {
+    return await createImageBitmap(blob);
+  }
+  return await new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => reject(new Error("image load failed"));
+    img.src = url;
+  });
+}
+
+function bakeSprite(
+  img: ImageBitmap | HTMLImageElement,
+  shape: Pt[],
+  size: number,
+  bgX: number,
+  bgY: number,
+  dpr: number
+): HTMLCanvasElement {
+  const px = Math.max(2, Math.round(size * dpr));
+  const c = document.createElement("canvas");
+  c.width = px;
+  c.height = px;
+  const ctx = c.getContext("2d");
+  if (!ctx) return c;
+  // Clip to polygon.
+  ctx.beginPath();
+  ctx.moveTo(shape[0][0] * px, shape[0][1] * px);
+  for (let i = 1; i < shape.length; i++) {
+    ctx.lineTo(shape[i][0] * px, shape[i][1] * px);
+  }
+  ctx.closePath();
+  ctx.clip();
+  // Draw a tile of the image scaled so the pebble samples a small region.
+  // bgX, bgY in [0, 1] picks the source corner; we crop a window of size
+  // ~1/4 of the source.
+  const sw = Math.min(img.width, img.height) / 4;
+  const sx = bgX * (img.width - sw);
+  const sy = bgY * (img.height - sw);
+  ctx.drawImage(img, sx, sy, sw, sw, 0, 0, px, px);
+  // Subtle leading line.
+  ctx.strokeStyle = "rgba(0,18,25,0.5)";
+  ctx.lineWidth = Math.max(0.5, dpr * 0.5);
+  ctx.stroke();
+  return c;
+}
+
+export function PebbleFall({ count = 110, src = "/hero-stained.avif" }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    if (typeof window === "undefined") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let cancelled = false;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
 
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const buffer = 200;
-    const yRange = h + buffer * 2;
+    const fit = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+    };
+    fit();
+    window.addEventListener("resize", fit);
 
-    const pebbles: Pebble[] = [];
-    for (let i = 0; i < count; i++) {
-      const el = document.createElement("div");
-      // Depth: -300 (far) to 300 (near).
-      const z = rand(-320, 240);
-      // Size grows with depth.
-      const depthFactor = (z + 320) / 560; // 0..1
-      const size = rand(8, 28) + depthFactor * 22;
-      const scale = 0.55 + depthFactor * 0.85;
-      // Slow gentle drift. Parallax via depth: near pebbles slightly faster.
-      const vy = 1.2 + depthFactor * 4.5 + rand(-0.4, 0.8);
-      const vx = rand(-0.7, 0.7) + depthFactor * rand(-0.5, 0.5);
-      const wx = rand(-8, 8);
-      const wy = rand(-8, 8);
-      const wz = rand(-22, 22);
-      const shape = (Math.random() * SHAPES.length) | 0;
+    let pebbles: Pebble[] = [];
 
-      // Random initial position scattered across viewport so the fall reads
-      // as ambient on first paint, not as a synchronized starting line.
-      const x = rand(-buffer, w + buffer);
-      const y = rand(-buffer, h + buffer);
-
-      // Background sample position — random offset into hero image per pebble.
-      const bgX = rand(0, 100);
-      const bgY = rand(0, 100);
-
-      el.style.position = "absolute";
-      el.style.width = `${size}px`;
-      el.style.height = `${size}px`;
-      el.style.top = "0";
-      el.style.left = "0";
-      el.style.clipPath = SHAPES[shape];
-      // @ts-expect-error vendor prefix
-      el.style.webkitClipPath = SHAPES[shape];
-      el.style.backgroundImage = `image-set(url("${src}.avif") type("image/avif"), url("${src}.webp") type("image/webp"), url("${src}.opt.jpg") type("image/jpeg"))`;
-      el.style.backgroundSize = "400% 400%";
-      el.style.backgroundPosition = `${bgX}% ${bgY}%`;
-      el.style.willChange = "transform";
-      el.style.boxShadow = "inset 0 0 0 0.3px rgba(0,18,25,0.45), 0 1px 1.5px rgba(0,18,25,0.3)";
-      // Far pebbles look hazy.
-      const dim = 0.45 + depthFactor * 0.55;
-      el.style.opacity = String(dim);
-      el.style.filter = depthFactor < 0.4 ? `blur(${(0.4 - depthFactor) * 4}px)` : "none";
-      container.appendChild(el);
-
-      pebbles.push({
-        el,
-        x,
-        y,
-        z,
-        vy,
-        vx,
-        rx: rand(0, 360),
-        ry: rand(0, 360),
-        rz: rand(0, 360),
-        wx,
-        wy,
-        wz,
-        scale,
-        size,
-        bgX,
-        bgY,
-        shape,
-      });
-    }
-    pebblesRef.current = pebbles;
-
-    if (reduced) {
-      for (const p of pebbles) {
-        p.el.style.transform = `translate3d(${p.x}px, ${p.y}px, ${p.z}px) rotateX(${p.rx}deg) rotateY(${p.ry}deg) rotateZ(${p.rz}deg) scale(${p.scale})`;
+    (async () => {
+      let img: ImageBitmap | HTMLImageElement;
+      try {
+        img = await loadImage(src);
+      } catch {
+        // Fallback: noop, no pebbles.
+        return;
       }
-      return () => {
-        for (const p of pebbles) p.el.remove();
-      };
-    }
+      if (cancelled) return;
 
-    let lastT = performance.now();
-    const tick = () => {
-      const now = performance.now();
-      const dt = Math.min(0.05, (now - lastT) / 1000); // clamp to 50ms (after tab background)
-      lastT = now;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
       const buf = 200;
-      const wrapTop = -buf;
-      const wrapBot = vh + buf;
-      for (let i = 0; i < pebbles.length; i++) {
-        const p = pebbles[i];
-        p.y += p.vy * dt * 60;
-        p.x += p.vx * dt * 60;
-        p.rx += p.wx * dt;
-        p.ry += p.wy * dt;
-        p.rz += p.wz * dt;
-        if (p.y > wrapBot) {
-          p.y = wrapTop - Math.random() * 80;
-          p.x = rand(-buf, vw + buf);
-        }
-        if (p.x < -buf - 40) p.x = vw + buf;
-        if (p.x > vw + buf + 40) p.x = -buf;
-        p.el.style.transform = `translate3d(${p.x}px, ${p.y}px, ${p.z}px) rotateX(${p.rx}deg) rotateY(${p.ry}deg) rotateZ(${p.rz}deg) scale(${p.scale})`;
+      for (let i = 0; i < count; i++) {
+        const z = rand(-320, 240);
+        const depthFactor = (z + 320) / 560;
+        const size = rand(8, 22) + depthFactor * 18;
+        const scale = 0.6 + depthFactor * 0.75;
+        const vy = 1.0 + depthFactor * 4 + rand(-0.3, 0.6);
+        const vx = rand(-0.5, 0.5) + depthFactor * rand(-0.4, 0.4);
+        const omega = rand(-22, 22);
+        const shape = SHAPES[(Math.random() * SHAPES.length) | 0];
+        const sprite = bakeSprite(img, shape, size, Math.random(), Math.random(), dpr);
+        pebbles.push({
+          sprite,
+          size,
+          x: rand(-buf, w + buf),
+          y: rand(-buf, h + buf),
+          z,
+          vy,
+          vx,
+          rot: rand(0, 360) * (Math.PI / 180),
+          omega: omega * (Math.PI / 180),
+          scale,
+          opacity: 0.5 + depthFactor * 0.5,
+        });
       }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
 
-    const onResize = () => {
-      // Just respawn x targets; vertical wrap recomputes on next tick.
-    };
-    window.addEventListener("resize", onResize);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      if (reduced) {
+        // Single frame in resting state, no rAF loop.
+        renderFrame(ctx, pebbles, canvas.width, canvas.height, dpr);
+        return;
+      }
+
+      let lastT = performance.now();
+      const tick = () => {
+        if (cancelled) return;
+        const now = performance.now();
+        const dt = Math.min(0.05, (now - lastT) / 1000);
+        lastT = now;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const wrapTop = -200;
+        const wrapBot = vh + 200;
+        for (let i = 0; i < pebbles.length; i++) {
+          const p = pebbles[i];
+          p.y += p.vy * dt * 60;
+          p.x += p.vx * dt * 60;
+          p.rot += p.omega * dt;
+          if (p.y > wrapBot) {
+            p.y = wrapTop - Math.random() * 80;
+            p.x = rand(-200, vw + 200);
+          }
+          if (p.x < -240) p.x = vw + 200;
+          if (p.x > vw + 240) p.x = -200;
+        }
+        renderFrame(ctx, pebbles, canvas.width, canvas.height, dpr);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    })();
 
     return () => {
+      cancelled = true;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", onResize);
-      for (const p of pebbles) p.el.remove();
+      window.removeEventListener("resize", fit);
+      pebbles = [];
     };
   }, [count, src]);
 
   return (
-    <div
+    <canvas
+      ref={canvasRef}
       aria-hidden
-      ref={containerRef}
-      className="pointer-events-none fixed inset-0 overflow-hidden"
-      style={{
-        perspective: "900px",
-        perspectiveOrigin: "50% 30%",
-        transformStyle: "preserve-3d",
-        // Layer above sunset bg, behind page content.
-        zIndex: 0,
-      }}
+      className="pointer-events-none fixed inset-0"
+      style={{ zIndex: 0 }}
     />
   );
+}
+
+function renderFrame(
+  ctx: CanvasRenderingContext2D,
+  pebbles: Pebble[],
+  cw: number,
+  ch: number,
+  dpr: number
+) {
+  ctx.clearRect(0, 0, cw, ch);
+  for (let i = 0; i < pebbles.length; i++) {
+    const p = pebbles[i];
+    const px = p.x * dpr;
+    const py = p.y * dpr;
+    const s = p.scale;
+    const half = p.sprite.width / 2;
+    ctx.save();
+    ctx.globalAlpha = p.opacity;
+    ctx.translate(px, py);
+    ctx.rotate(p.rot);
+    ctx.scale(s, s);
+    ctx.drawImage(p.sprite, -half, -half);
+    ctx.restore();
+  }
 }
