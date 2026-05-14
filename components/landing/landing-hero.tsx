@@ -94,6 +94,17 @@ export function LandingHero() {
         </div>
       </header>
 
+      {/* Legibility scrim — softens pebbles behind hero text without hiding them */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed left-1/2 top-0 -translate-x-1/2 w-[min(1200px,95vw)] h-[110vh]"
+        style={{
+          zIndex: 1,
+          background:
+            "radial-gradient(ellipse 55% 45% at 50% 35%, var(--color-bg) 0%, color-mix(in srgb, var(--color-bg) 80%, transparent) 35%, transparent 75%)",
+        }}
+      />
+
       <main className="relative z-10 mx-auto max-w-[1180px] px-6 sm:px-8 pt-10 sm:pt-16">
         {/* Eyebrow */}
         <motion.div
@@ -110,7 +121,10 @@ export function LandingHero() {
 
         {/* Kinetic headline */}
         <div className="mb-8 text-center">
-          <h1 className="text-balance text-[44px] leading-[1.02] tracking-tight text-fg sm:text-[64px] md:text-[78px]">
+          <h1
+            className="text-balance text-[44px] leading-[1.02] tracking-tight text-fg sm:text-[64px] md:text-[78px]"
+            style={{ textShadow: "0 1px 0 var(--color-bg), 0 0 14px color-mix(in srgb, var(--color-bg) 80%, transparent)" }}
+          >
             <KineticLine
               parts={[
                 { text: "Draw" },
