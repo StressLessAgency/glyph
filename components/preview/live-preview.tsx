@@ -113,7 +113,7 @@ export function LivePreview() {
         </div>
       </div>
 
-      <div className="mx-5 mb-5 flex-1 rounded-xl border border-border bg-bg overflow-hidden noise">
+      <div className="card-light mx-5 mb-5 flex-1 rounded-xl border border-border overflow-hidden noise">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}

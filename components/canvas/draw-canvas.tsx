@@ -113,7 +113,7 @@ export function DrawCanvas() {
   return (
     <div className="relative h-full w-full flex flex-col items-center justify-center px-6 py-8 select-none">
       <div
-        className="relative aspect-[3/4] w-full max-w-[520px] rounded-2xl bg-bg border border-border shadow-soft noise overflow-hidden grid-paper"
+        className="card-light relative aspect-[3/4] w-full max-w-[520px] rounded-2xl border border-border shadow-soft noise overflow-hidden grid-paper"
         style={{ touchAction: "none" }}
       >
         <svg
