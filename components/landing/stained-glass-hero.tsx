@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Delaunay } from "d3-delaunay";
 
-const NUM_SHARDS = 64;
+const NUM_SHARDS = 240;
 const SEED = 8821;
 // Generation viewport in normalized units (0–1000 x, 0–700 y).
 const W = 1000;
@@ -42,8 +42,8 @@ function mulberry32(seed: number) {
 function buildShards(): Shard[] {
   const rand = mulberry32(SEED);
   // Jittered grid seed points produce more even-sized shards than pure random.
-  const cols = 10;
-  const rows = 7;
+  const cols = 20;
+  const rows = 14;
   const pts: [number, number][] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -86,28 +86,19 @@ function buildShards(): Shard[] {
     const dy = cy - cyCenter;
     const dist = Math.hypot(dx, dy) || 1;
 
-    // Initial velocity: radial outward, with cone spread + speed variance.
-    const radialX = dx / dist;
-    const radialY = dy / dist;
-    const baseAngle = Math.atan2(radialY, radialX);
-    const angleSpread = (rand() - 0.5) * 0.55; // ±0.275 rad ≈ ±15°
-    const launchAngle = baseAngle + angleSpread;
-    const speed = 380 + rand() * 720; // 380–1100 px/s
-    let vx = Math.cos(launchAngle) * speed;
-    let vy = Math.sin(launchAngle) * speed;
-    // Upper-half shards get an upward kick so they arc before falling.
-    if (cy < cyCenter) vy -= 280 + rand() * 280;
-    // Lower-half shards already get gravity acceleration; reduce upward bias.
+    // Crumble feel: minimal outward push, mostly straight down with light drift.
+    // Pieces detach and fall under gravity instead of exploding.
+    const vx = (rand() - 0.5) * 80; // -40..40 px/s lateral drift
+    const vy = rand() * 60; // 0..60 px/s initial downward
+    const omega = (rand() - 0.5) * 220; // -110..110 deg/s — gentle tumble
 
-    // Angular velocity — tumble. Sign mostly matches drift direction.
-    const omega = (rand() - 0.5) * 1100; // -550..550 deg/s
+    // Cascade: center disintegrates first, edges crumble last.
+    const distRatio = dist / maxDist; // 0=center, 1=corner
+    const delay = distRatio * 2.4 + rand() * 0.4;
 
-    // Cascade: edges break a touch later than middle, with randomness.
-    const delay = (1 - dist / maxDist) * 0.12 + rand() * 0.22;
-
-    const jitterX = (rand() - 0.5) * 8;
-    const jitterY = (rand() - 0.5) * 8;
-    const endScale = 0.55 + rand() * 0.3;
+    const jitterX = (rand() - 0.5) * 4;
+    const jitterY = (rand() - 0.5) * 4;
+    const endScale = 0.7 + rand() * 0.2;
 
     shards.push({
       clip: `polygon(${clip})`,
@@ -125,11 +116,13 @@ function buildShards(): Shard[] {
   return shards;
 }
 
-const GRAVITY = 2400; // px/s²
-const SHATTER_DURATION_S = 1.55;
+const GRAVITY = 900; // px/s² — gentler than freefall, sand-like
+const SHARD_FALL_S = 3.6; // each shard's own fall duration
+const MAX_STAGGER_S = 2.8; // last shards detach this long after first
+const SHATTER_DURATION_S = SHARD_FALL_S + MAX_STAGGER_S; // total intro tail
 
 function shardKeyframes(s: Shard) {
-  const T = SHATTER_DURATION_S;
+  const T = SHARD_FALL_S;
   // Three keyframes — t=0, t=T/2, t=T — with gravity-integrated positions.
   const t1 = T / 2;
   const t2 = T;
@@ -189,7 +182,11 @@ export function StainedGlassHero({
   const [mounted, setMounted] = useState(false);
   const shards = useMemo(buildShards, []);
   const [phase, setPhase] = useState<"in" | "hold" | "shatter" | "gone">("in");
-  const ran = useRef(false);
+  // Stash callbacks in refs so the timer effect never re-fires on parent renders.
+  const onShatterStartRef = useRef(onShatterStart);
+  const onShatteredRef = useRef(onShattered);
+  onShatterStartRef.current = onShatterStart;
+  onShatteredRef.current = onShattered;
 
   useEffect(() => {
     setMounted(true);
@@ -197,23 +194,21 @@ export function StainedGlassHero({
 
   useEffect(() => {
     if (!mounted) return;
-    if (ran.current) return;
-    ran.current = true;
     const t1 = window.setTimeout(() => setPhase("hold"), FADE_IN_MS);
     const t2 = window.setTimeout(() => {
       setPhase("shatter");
-      onShatterStart?.();
+      onShatterStartRef.current?.();
     }, FADE_IN_MS + holdMs);
     const t3 = window.setTimeout(() => {
       setPhase("gone");
-      onShattered?.();
+      onShatteredRef.current?.();
     }, FADE_IN_MS + holdMs + SHATTER_DURATION_MS);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
       window.clearTimeout(t3);
     };
-  }, [mounted, holdMs, onShatterStart, onShattered]);
+  }, [mounted, holdMs]);
 
   if (!mounted) return null;
   if (phase === "gone") return null;
@@ -259,7 +254,7 @@ export function StainedGlassHero({
               shattering
                 ? {
                     delay: s.delay,
-                    duration: SHATTER_DURATION_S,
+                    duration: SHARD_FALL_S,
                     ease: "linear",
                     times: [0, 0.5, 1],
                   }
