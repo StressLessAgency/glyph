@@ -22,10 +22,10 @@ const buttonVariants = cva(
         link: "text-fg underline-offset-4 hover:underline px-0",
       },
       size: {
-        sm: "h-8 px-3 text-[13px] rounded-md",
-        md: "h-10 px-4 text-sm rounded-lg",
+        sm: "h-11 px-3 text-[13px] rounded-md md:h-9",
+        md: "h-11 px-4 text-sm rounded-lg md:h-10",
         lg: "h-12 px-6 text-[15px] rounded-xl",
-        icon: "h-9 w-9 rounded-md",
+        icon: "h-11 w-11 rounded-md md:h-9 md:w-9",
         "icon-lg": "h-11 w-11 rounded-lg",
       },
     },

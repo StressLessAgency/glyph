@@ -45,6 +45,7 @@ export function Topbar() {
           value={font.name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Untitled font"
+          aria-label="Font name"
           className="bg-transparent text-[15px] font-medium tracking-tight outline-none text-fg placeholder:text-fg-subtle max-w-[280px] truncate"
         />
         <span className="text-fg-subtle">·</span>
@@ -52,6 +53,7 @@ export function Topbar() {
           value={font.author}
           onChange={(e) => setAuthor(e.target.value)}
           placeholder="by you"
+          aria-label="Author name"
           className="bg-transparent text-[13px] outline-none text-fg-muted placeholder:text-fg-subtle/70 max-w-[180px] truncate"
         />
       </div>

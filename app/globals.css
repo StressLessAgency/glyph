@@ -18,8 +18,8 @@
   --color-surface: #f3ecd9;
   --color-surface-2: #ece2c4;
   --color-fg: #001219;
-  --color-fg-muted: #3a5560;
-  --color-fg-subtle: #7d8e92;
+  --color-fg-muted: #2f4750;
+  --color-fg-subtle: #566669; /* WCAG AA on bg (~5.3:1) */
   --color-border: #e6dcc1;
   --color-border-strong: #c9bb96;
   --color-ink: #001219;
@@ -54,6 +54,37 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* Dark mode token overrides. Activate by adding `data-theme="dark"` on <html>,
+ * or rely on prefers-color-scheme when no explicit theme is set. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #0d141a;
+    --color-surface: #131c23;
+    --color-surface-2: #1a262e;
+    --color-fg: #f4ecd9;
+    --color-fg-muted: #b8c1c4;
+    --color-fg-subtle: #8a9ba0;
+    --color-border: #243038;
+    --color-border-strong: #34464f;
+    --color-ink: #f4ecd9;
+    --color-accent-soft: rgba(238, 155, 0, 0.14);
+    --color-info-soft: rgba(10, 147, 150, 0.16);
+  }
+}
+:root[data-theme="dark"] {
+  --color-bg: #0d141a;
+  --color-surface: #131c23;
+  --color-surface-2: #1a262e;
+  --color-fg: #f4ecd9;
+  --color-fg-muted: #b8c1c4;
+  --color-fg-subtle: #8a9ba0;
+  --color-border: #243038;
+  --color-border-strong: #34464f;
+  --color-ink: #f4ecd9;
+  --color-accent-soft: rgba(238, 155, 0, 0.14);
+  --color-info-soft: rgba(10, 147, 150, 0.16);
 }
 
 @layer base {
@@ -201,14 +232,12 @@
       0% 0%,
       100% 0%,
       50% 100%;
-    filter: hue-rotate(0deg);
   }
   100% {
     background-position:
       8% 12%,
       88% 18%,
       55% 92%;
-    filter: hue-rotate(-8deg);
   }
 }
 

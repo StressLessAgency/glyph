@@ -146,7 +146,7 @@ function MetricsVisual() {
         fontFamily="ui-monospace, monospace"
         fontSize="7"
         letterSpacing="1"
-        fill="hsl(220 6% 58%)"
+        fill="var(--color-fg-subtle)"
       >
         CAP 700
       </motion.text>

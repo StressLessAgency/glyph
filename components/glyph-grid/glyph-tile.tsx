@@ -41,6 +41,8 @@ export function GlyphTile({
       type="button"
       onClick={onClick}
       title={spec.name}
+      aria-label={spec.name}
+      aria-pressed={active}
       className={cn(
         "group relative flex aspect-square w-full flex-col items-center justify-center rounded-md border transition-all overflow-hidden",
         active

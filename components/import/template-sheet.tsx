@@ -4,6 +4,7 @@ import { Printer, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ALL_GLYPHS } from "@/lib/glyphs";
 import { downloadBlob } from "@/lib/font-wrap";
+import { palette } from "@/lib/theme";
 
 const PAGE_W = 816; // 8.5" * 96dpi
 const PAGE_H = 1056; // 11" * 96dpi
@@ -21,15 +22,15 @@ function buildTemplateSvg(): string {
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PAGE_W} ${PAGE_H}" width="${PAGE_W}" height="${PAGE_H}" font-family="Inter, system-ui, sans-serif">`
   );
   parts.push(
-    `<rect width="${PAGE_W}" height="${PAGE_H}" fill="#fff"/>`
+    `<rect width="${PAGE_W}" height="${PAGE_H}" fill="${palette.bg}"/>`
   );
 
   // Header
   parts.push(
-    `<text x="${MARGIN}" y="${MARGIN}" font-size="22" font-style="italic" font-family="Georgia, serif" fill="#0a0a1a">Glyph — template sheet</text>`
+    `<text x="${MARGIN}" y="${MARGIN}" font-size="22" font-style="italic" font-family="Georgia, serif" fill="${palette.ocean}">Glyph — template sheet</text>`
   );
   parts.push(
-    `<text x="${MARGIN}" y="${MARGIN + 22}" font-size="11" fill="#666" letter-spacing="0.5">Write each character inside the box, sitting on the baseline. Use a black felt-tip pen.</text>`
+    `<text x="${MARGIN}" y="${MARGIN + 22}" font-size="11" fill="${palette.fgMuted}" letter-spacing="0.5">Write each character inside the box, sitting on the baseline. Use a black felt-tip pen.</text>`
   );
 
   // Corner fiducials
@@ -39,7 +40,7 @@ function buildTemplateSvg(): string {
     [MARGIN, PAGE_H - MARGIN - 18],
     [PAGE_W - MARGIN - 18, PAGE_H - MARGIN - 18],
   ]) {
-    parts.push(`<rect x="${fx}" y="${fy}" width="18" height="18" fill="#000"/>`);
+    parts.push(`<rect x="${fx}" y="${fy}" width="18" height="18" fill="${palette.ocean}"/>`);
   }
 
   const gridTop = MARGIN + 80;
@@ -53,34 +54,29 @@ function buildTemplateSvg(): string {
     const capY = baselineY - cellH * 0.62;
     const xY = baselineY - cellH * 0.4;
 
-    // cell box
     parts.push(
-      `<rect x="${x + 4}" y="${y + 4}" width="${cellW - 8}" height="${cellH - 8}" fill="none" stroke="#e5e5e3" stroke-width="1" rx="6"/>`
-    );
-    // baseline + lines
-    parts.push(
-      `<line x1="${x + 8}" y1="${baselineY}" x2="${x + cellW - 8}" y2="${baselineY}" stroke="#ff5722" stroke-opacity="0.4" stroke-width="0.7"/>`
+      `<rect x="${x + 4}" y="${y + 4}" width="${cellW - 8}" height="${cellH - 8}" fill="none" stroke="${palette.border}" stroke-width="1" rx="6"/>`
     );
     parts.push(
-      `<line x1="${x + 8}" y1="${capY}" x2="${x + cellW - 8}" y2="${capY}" stroke="#bbb" stroke-dasharray="2 3" stroke-width="0.5"/>`
+      `<line x1="${x + 8}" y1="${baselineY}" x2="${x + cellW - 8}" y2="${baselineY}" stroke="${palette.amber}" stroke-opacity="0.55" stroke-width="0.7"/>`
     );
     parts.push(
-      `<line x1="${x + 8}" y1="${xY}" x2="${x + cellW - 8}" y2="${xY}" stroke="#bbb" stroke-dasharray="2 3" stroke-width="0.5"/>`
+      `<line x1="${x + 8}" y1="${capY}" x2="${x + cellW - 8}" y2="${capY}" stroke="${palette.fgSubtle}" stroke-dasharray="2 3" stroke-width="0.5"/>`
     );
-    // char hint (faint)
     parts.push(
-      `<text x="${x + cellW / 2}" y="${baselineY}" font-size="${cellH * 0.55}" fill="#0a0a1a" fill-opacity="0.08" text-anchor="middle" font-family="Georgia, serif" font-style="italic">${escapeXml(g.char)}</text>`
+      `<line x1="${x + 8}" y1="${xY}" x2="${x + cellW - 8}" y2="${xY}" stroke="${palette.fgSubtle}" stroke-dasharray="2 3" stroke-width="0.5"/>`
     );
-    // label
     parts.push(
-      `<text x="${x + 10}" y="${y + 16}" font-size="9" fill="#999" font-family="ui-monospace, monospace" letter-spacing="0.5">${g.char === " " ? "SPC" : g.code.toString(16).toUpperCase().padStart(2, "0")}</text>`
+      `<text x="${x + cellW / 2}" y="${baselineY}" font-size="${cellH * 0.55}" fill="${palette.ocean}" fill-opacity="0.08" text-anchor="middle" font-family="Georgia, serif" font-style="italic">${escapeXml(g.char)}</text>`
+    );
+    parts.push(
+      `<text x="${x + 10}" y="${y + 16}" font-size="9" fill="${palette.fgSubtle}" font-family="ui-monospace, monospace" letter-spacing="0.5">${g.char === " " ? "SPC" : g.code.toString(16).toUpperCase().padStart(2, "0")}</text>`
     );
     i++;
   }
 
-  // Footer
   parts.push(
-    `<text x="${MARGIN}" y="${PAGE_H - MARGIN + 8}" font-size="9" fill="#999" font-family="ui-monospace, monospace">glyph.studio · template v1 · ${COLS}-col</text>`
+    `<text x="${MARGIN}" y="${PAGE_H - MARGIN + 8}" font-size="9" fill="${palette.fgSubtle}" font-family="ui-monospace, monospace">glyph.studio · template v1 · ${COLS}-col</text>`
   );
 
   parts.push("</svg>");
@@ -107,7 +103,7 @@ export function TemplateSheet() {
     const svg = buildTemplateSvg();
     const w = window.open("", "_blank", "width=820,height=1080");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Glyph Template</title><style>@page{margin:0}body{margin:0;background:#fff}svg{display:block;margin:0 auto}</style></head><body>${svg}<script>window.onload=()=>setTimeout(()=>window.print(),200)</script></body></html>`);
+    w.document.write(`<!doctype html><html><head><title>Glyph Template</title><style>@page{margin:0}body{margin:0;background:${palette.bg}}svg{display:block;margin:0 auto}</style></head><body>${svg}<script>window.onload=()=>setTimeout(()=>window.print(),200)</script></body></html>`);
     w.document.close();
   };
 

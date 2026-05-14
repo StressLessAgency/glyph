@@ -107,6 +107,7 @@ export function LivePreview() {
             max={140}
             value={size}
             onChange={(e) => setSize(Number(e.target.value))}
+            aria-label="Preview text size"
             className="h-1 w-24 accent-ink"
           />
         </div>
@@ -116,6 +117,7 @@ export function LivePreview() {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          aria-label="Sample text"
           spellCheck={false}
           style={{
             fontFamily: fontUrl

@@ -41,7 +41,7 @@ export function Guidelines({
     fontSize: 9,
     letterSpacing: "0.08em",
     textTransform: "uppercase" as const,
-    fill: "hsl(220 6% 58%)",
+    fill: "var(--color-fg-subtle)",
   };
 
   return (
@@ -53,7 +53,7 @@ export function Guidelines({
         width={width - 40}
         height={height - 40}
         fill="none"
-        stroke="hsl(220 15% 8% / 0.06)"
+        stroke="rgba(0, 18, 25, 0.06)"
         strokeDasharray="3 4"
         rx={8}
       />
@@ -64,10 +64,10 @@ export function Guidelines({
         y1={lines.baseline}
         x2={width - 20}
         y2={lines.baseline}
-        stroke="hsl(15 88% 52% / 0.55)"
+        stroke="rgba(238, 155, 0, 0.7)"
         strokeWidth={1}
       />
-      <text x={width - 24} y={lines.baseline - 4} textAnchor="end" style={labelStyle} fill="hsl(15 88% 52% / 0.85)">
+      <text x={width - 24} y={lines.baseline - 4} textAnchor="end" style={labelStyle} fill="rgba(202, 103, 2, 1)">
         baseline
       </text>
 
@@ -79,7 +79,7 @@ export function Guidelines({
             y1={lines.capTop}
             x2={width - 20}
             y2={lines.capTop}
-            stroke="hsl(220 15% 8% / 0.14)"
+            stroke="rgba(0, 18, 25, 0.14)"
             strokeDasharray="2 4"
           />
           <text x={24} y={lines.capTop - 4} style={labelStyle}>
@@ -94,7 +94,7 @@ export function Guidelines({
             y1={lines.xTop}
             x2={width - 20}
             y2={lines.xTop}
-            stroke="hsl(220 15% 8% / 0.14)"
+            stroke="rgba(0, 18, 25, 0.14)"
             strokeDasharray="2 4"
           />
           <text x={24} y={lines.xTop - 4} style={labelStyle}>
@@ -109,7 +109,7 @@ export function Guidelines({
             y1={lines.desc}
             x2={width - 20}
             y2={lines.desc}
-            stroke="hsl(220 15% 8% / 0.14)"
+            stroke="rgba(0, 18, 25, 0.14)"
             strokeDasharray="2 4"
           />
           <text x={24} y={lines.desc + 12} style={labelStyle}>

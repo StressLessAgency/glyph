@@ -186,7 +186,7 @@ export function LandingHero() {
           <section className="mt-28">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-subtle">
-                Continue working
+                <span className="sr-only">Section: </span>Continue working
               </h2>
               <span className="font-mono text-[11px] text-fg-subtle">
                 {fonts.length} saved
